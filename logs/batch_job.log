@@ -1,0 +1,10 @@
+2026-04-03 00:17:08 | INFO | MainThread | starting command=dry-run env=dev
+2026-04-03 00:17:08 | INFO | MainThread | dry-run summary: files_discovered=0 duplicate_skipped=0 batches=0
+2026-04-03 01:32:09 | INFO | MainThread | starting command=dry-run env=dev
+2026-04-03 01:32:09 | INFO | MainThread | dry-run summary: files_discovered=0 duplicate_skipped=0 batches=0
+2026-04-03 01:40:59 | INFO | MainThread | starting command=dry-run env=dev
+2026-04-03 01:40:59 | INFO | MainThread | dry-run summary: files_discovered=0 duplicate_skipped=0 batches=0
+2026-04-03 01:42:07 | INFO | MainThread | starting command=dry-run env=dev
+2026-04-03 01:42:07 | INFO | MainThread | dry-run summary: files_discovered=0 duplicate_skipped=0 batches=0
+2026-04-03 01:42:38 | INFO | MainThread | starting command=dry-run env=dev
+2026-04-03 01:42:38 | INFO | MainThread | dry-run summary: files_discovered=0 duplicate_skipped=0 batches=0
