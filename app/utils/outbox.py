@@ -2,6 +2,7 @@ import json
 import os
 import uuid
 from datetime import datetime
+from datetime import timezone
 from pathlib import Path
 
 from app.models import FinalizeRecord
@@ -91,7 +92,7 @@ class OutboxManager:
             "operation": operation,
             "run_id": run_id,
             "batch_index": batch_index,
-            "created_at": datetime.utcnow().isoformat() + "Z",
+            "created_at": datetime.now(timezone.utc).isoformat() + "Z",
             "records": records,
         }
         file_path = self.outbox_dir / ("%s_batch_%s_%s.json" % (run_id, batch_index, operation))

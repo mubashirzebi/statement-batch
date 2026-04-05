@@ -2,6 +2,7 @@ import argparse
 import logging
 import uuid
 from datetime import datetime
+from datetime import timezone
 
 from app.config import AppConfig
 from app.config import COMMAND_DB_CHECK
@@ -132,7 +133,7 @@ def _run_batch(config, logger, session_id):
             service = BatchService(config, repository, uploader, outbox_manager, logger)
             worker = BatchWorker(config, service, logger)
 
-            run_id = "%s_%s" % (datetime.utcnow().strftime("%Y%m%dT%H%M%SZ"), session_id)
+            run_id = "%s_%s" % (datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ"), session_id)
             worker.run(run_id)
         finally:
             pool.close()

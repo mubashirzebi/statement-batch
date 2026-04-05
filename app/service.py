@@ -88,7 +88,12 @@ class BatchService:
                         failed_jobs.append((job, record))
                     else:
                         summary.upload_failed += 1
-                        failed_jobs.append((job, record))
+                        # UPLOAD_FAILED (S3/network) is transient. We log it here and 
+                        # leave it in input. We do NOT add it to failed_jobs.
+                        self.logger.warning(
+                            "leaving upload-failed file in input for retry on next run: %s",
+                            job.file_name,
+                        )
                 elif prepared.pre_status == PRE_STATUS_META_NOT_FOUND:
                     summary.metadata_missing += 1
                     failed_jobs.append((job, record))

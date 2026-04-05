@@ -31,17 +31,17 @@ class S3Uploader:
         response = self.client.get_object(Bucket=self.bucket, Key=probe_key)
         body_sample = response["Body"].read(16)
 
-        delete_allowed = True
+        delete_allowed = False
         cleanup_warning = ""
-        try:
-            self.client.delete_object(Bucket=self.bucket, Key=probe_key)
-        except ClientError as exc:
-            error_code = exc.response.get("Error", {}).get("Code", "")
-            if error_code in ("AccessDenied", "UnauthorizedOperation"):
-                delete_allowed = False
-                cleanup_warning = str(exc)
-            else:
-                raise
+        # try:
+        #     self.client.delete_object(Bucket=self.bucket, Key=probe_key)
+        # except ClientError as exc:
+        #     error_code = exc.response.get("Error", {}).get("Code", "")
+        #     if error_code in ("AccessDenied", "UnauthorizedOperation"):
+        #         delete_allowed = False
+        #         cleanup_warning = str(exc)
+        #     else:
+        #         raise
 
         return {
             "bucket": self.bucket,
