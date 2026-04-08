@@ -1,7 +1,7 @@
 import uuid
 
 import boto3
-from botocore.exceptions import ClientError
+# from botocore.exceptions import ClientError
 
 
 class S3Uploader:

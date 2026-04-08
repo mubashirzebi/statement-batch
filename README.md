@@ -30,7 +30,7 @@ python main.py run
 
 - Oracle is currently implemented in thick mode only.
 - Local/dev can use direct env credentials.
-- Prod can use AWS Secrets Manager.
+- Prod uses AWS Secrets Manager for DB and **IAM Roles** for S3.
 - Logs go to console and also into one folder per run under `BATCH_LOG_DIR`.
 - Per-run folders use a readable timestamped name like `2026-04-04_14-30-00_run_ab12cd34`.
 - The folder structure is:

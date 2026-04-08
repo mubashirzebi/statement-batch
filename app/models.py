@@ -84,7 +84,6 @@ class BatchSummary:
     upload_failed: int = 0
     moved_success: int = 0
     moved_failed: int = 0
-    duplicate_skipped: int = 0
     failed_file_moves: int = 0
 
     def merge(self, other: "BatchSummary") -> None:
@@ -95,14 +94,12 @@ class BatchSummary:
         self.upload_failed += other.upload_failed
         self.moved_success += other.moved_success
         self.moved_failed += other.moved_failed
-        self.duplicate_skipped += other.duplicate_skipped
         self.failed_file_moves += other.failed_file_moves
 
 
 @dataclass
 class DryRunSummary:
     files_discovered: int = 0
-    duplicate_skipped: int = 0
     batches: int = 0
 
 

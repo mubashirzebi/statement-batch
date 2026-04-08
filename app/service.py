@@ -42,11 +42,7 @@ class BatchService:
 
     def process_batch(self, batch_paths: List[Path], batch_index: int, run_id: str) -> BatchSummary:
         summary = BatchSummary(batch_index=batch_index)
-        jobs, duplicate_jobs = self._build_jobs(batch_paths)
-
-        for duplicate_job in duplicate_jobs:
-            self._move_duplicate(duplicate_job)
-            summary.duplicate_skipped += 1
+        jobs = self._build_jobs(batch_paths)
 
         if not jobs:
             return summary
@@ -176,7 +172,7 @@ class BatchService:
                     )
 
             self.logger.summary(
-                "batch %s completed: uploaded=%s metadata_missing=%s db_failed=%s upload_failed=%s moved_success=%s moved_failed=%s duplicates=%s duration_ms=%s",
+                "batch %s completed: uploaded=%s metadata_missing=%s db_failed=%s upload_failed=%s moved_success=%s moved_failed=%s duration_ms=%s",
                 batch_index,
                 summary.uploaded,
                 summary.metadata_missing,
@@ -184,7 +180,6 @@ class BatchService:
                 summary.upload_failed,
                 summary.moved_success,
                 summary.moved_failed,
-                summary.duplicate_skipped,
                 self._elapsed_ms(batch_started_at),
             )
             return summary
@@ -201,10 +196,8 @@ class BatchService:
     def _elapsed_ms(started_at):
         return int((perf_counter() - started_at) * 1000)
 
-    def _build_jobs(self, batch_paths: List[Path]) -> Tuple[List[FileJob], List[FileJob]]:
+    def _build_jobs(self, batch_paths: List[Path]) -> List[FileJob]:
         jobs = []
-        duplicates = []
-        seen_names = set()
 
         for path in batch_paths:
             file_name = normalize_db_file_name(path.name)
@@ -215,13 +208,9 @@ class BatchService:
                 original_file_name=path.name,
                 fy_years=fy_years,
             )
-            if file_name in seen_names:
-                duplicates.append(job)
-                continue
-            seen_names.add(file_name)
             jobs.append(job)
 
-        return jobs, duplicates
+        return jobs
 
     def _build_finalize_record(self, job, prepared):
         source_path = str(job.path.absolute())

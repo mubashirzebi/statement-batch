@@ -47,24 +47,15 @@ class CredentialResolver:
         )
 
     def get_s3_credentials(self) -> S3Credentials:
-        if self.config.secret_mode == SECRET_MODE_ENV:
-            return S3Credentials(
-                bucket=self.config.s3_bucket,
-                region=self.config.aws_region,
-                access_key_id=self.config.aws_access_key_id,
-                secret_access_key=self.config.aws_secret_access_key,
-                session_token=self.config.aws_session_token,
-                endpoint_url=self.config.s3_endpoint_url,
-            )
-
-        payload = self._get_json_secret(self.config.s3_secret_name)
+        # S3 now strictly uses Environment Variables or IAM Roles.
+        # Secrets Manager is bypassed for S3 credentials.
         return S3Credentials(
-            bucket=str(payload["bucket"]),
-            region=str(payload.get("region") or self.config.aws_region),
-            access_key_id=str(payload.get("aws_access_key_id") or ""),
-            secret_access_key=str(payload.get("aws_secret_access_key") or ""),
-            session_token=str(payload.get("aws_session_token") or ""),
-            endpoint_url=str(payload.get("endpoint_url") or self.config.s3_endpoint_url or ""),
+            bucket=self.config.s3_bucket,
+            region=self.config.aws_region,
+            access_key_id=self.config.aws_access_key_id,
+            secret_access_key=self.config.aws_secret_access_key,
+            session_token=self.config.aws_session_token,
+            endpoint_url=self.config.s3_endpoint_url,
         )
 
     def check_secret_access(self) -> Dict[str, Any]:
@@ -72,11 +63,10 @@ class CredentialResolver:
             return {"mode": self.config.secret_mode, "message": "Secrets Manager not in use"}
 
         db_payload = self._get_json_secret(self.config.db_secret_name)
-        s3_payload = self._get_json_secret(self.config.s3_secret_name)
         return {
             "mode": self.config.secret_mode,
             "db_secret_keys": sorted(db_payload.keys()),
-            "s3_secret_keys": sorted(s3_payload.keys()),
+            "s3_status": "Using IAM/Env (Secrets Manager bypassed for S3)",
         }
 
     def _get_json_secret(self, secret_name: str) -> Dict[str, Any]:

@@ -37,13 +37,13 @@ Because you insisted on: **move after DB update**, but also on truthfulness:
 ## Credentials
 
 ### Local / UAT / Prod — same pattern
-You pass only **secret names**; the app fetches credentials from AWS Secrets Manager.
+Oracle credentials are fetched from AWS Secrets Manager, while S3 configuration is provided via environment variables (authenticating via IAM Roles).
 
 Required env vars:
 
 - `AWS_REGION`
 - `DB_SECRET_NAME` – secret containing Oracle credentials JSON
-- `S3_SECRET_NAME` – secret containing S3 credentials JSON
+- `S3_BUCKET` – target S3 bucket name
 
 **DB secret JSON (example)**
 ```json
@@ -61,7 +61,7 @@ Required env vars:
 
 Common env vars:
 
-- `BATCH_INPUT_DIR` (required)
+- `BATCH_INPUT_DIR` (required) — **Note: This directory must be flat (no subfolders) and unique file names are assumed.**
 - `BATCH_SUCCESS_DIR` (required)
 - `BATCH_FAILED_DIR` (required)
 

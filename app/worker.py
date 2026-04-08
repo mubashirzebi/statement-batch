@@ -9,10 +9,6 @@ from time import perf_counter
 
 from app.models import BatchSummary
 from app.models import DryRunSummary
-from app.utils.files import build_failed_destination
-from app.utils.files import extract_fy_years
-from app.utils.files import move_to_path
-from app.utils.files import normalize_db_file_name
 
 
 class BatchWorker:
@@ -28,27 +24,17 @@ class BatchWorker:
         pending = set()
         first_error = None
         current_batch = []
-        seen_names = set()
         stop_event = threading.Event()
 
         with ThreadPoolExecutor(max_workers=self.config.worker_count, thread_name_prefix="batch-worker") as executor:
             for path in self._iter_input_files():
-                file_name = normalize_db_file_name(path.name)
                 summary.total_seen += 1
                 if summary.total_seen % 1000 == 0:
                     self.logger.info(
-                        "scan progress: total_seen=%s batches_submitted=%s duplicates=%s",
+                        "scan progress: total_seen=%s batches_submitted=%s",
                         summary.total_seen,
                         batch_index,
-                        summary.duplicate_skipped,
                     )
-
-                if file_name in seen_names:
-                    self._move_global_duplicate(path)
-                    summary.duplicate_skipped += 1
-                    continue
-
-                seen_names.add(file_name)
                 current_batch.append(path)
 
                 if len(current_batch) >= self.config.batch_size:
@@ -74,13 +60,12 @@ class BatchWorker:
                 raise first_error
 
         self.logger.summary(
-            "run summary: total_seen=%s uploaded=%s metadata_missing=%s db_failed=%s upload_failed=%s duplicates=%s moved_success=%s moved_failed=%s failed_file_moves=%s duration_ms=%s",
+            "run summary: total_seen=%s uploaded=%s metadata_missing=%s db_failed=%s upload_failed=%s moved_success=%s moved_failed=%s failed_file_moves=%s duration_ms=%s",
             summary.total_seen,
             summary.uploaded,
             summary.metadata_missing,
             summary.db_failed,
             summary.upload_failed,
-            summary.duplicate_skipped,
             summary.moved_success,
             summary.moved_failed,
             summary.failed_file_moves,
@@ -92,21 +77,15 @@ class BatchWorker:
         run_started_at = perf_counter()
         summary = DryRunSummary()
         batch_size = 0
-        seen_names = set()
 
         for path in self._iter_input_files():
             summary.files_discovered += 1
             if summary.files_discovered % 1000 == 0:
                 self.logger.info(
-                    "dry-run progress: files_discovered=%s batches=%s duplicates=%s",
+                    "dry-run progress: files_discovered=%s batches=%s",
                     summary.files_discovered,
                     summary.batches,
-                    summary.duplicate_skipped,
                 )
-            if normalize_db_file_name(path.name) in seen_names:
-                summary.duplicate_skipped += 1
-                continue
-            seen_names.add(normalize_db_file_name(path.name))
             batch_size += 1
             if batch_size == self.config.batch_size:
                 summary.batches += 1
@@ -116,9 +95,8 @@ class BatchWorker:
             summary.batches += 1
 
         self.logger.summary(
-            "dry-run summary: files_discovered=%s duplicate_skipped=%s batches=%s duration_ms=%s",
+            "dry-run summary: files_discovered=%s batches=%s duration_ms=%s",
             summary.files_discovered,
-            summary.duplicate_skipped,
             summary.batches,
             self._elapsed_ms(run_started_at),
         )
@@ -131,20 +109,6 @@ class BatchWorker:
             for file_name in sorted(file_names):
                 if file_name.lower().endswith(".pdf"):
                     yield Path(current_root) / file_name
-
-    def _move_global_duplicate(self, path):
-        fy_years = extract_fy_years(path.name, self.config.fy_regex)
-        destination = build_failed_destination(
-            self.config.failed_dir,
-            fy_years,
-            "DUPLICATE_FILE_NAME",
-            path.name,
-        )
-        try:
-            move_to_path(path, destination)
-            self.logger.warning("skipped duplicate file name discovered during scan: %s", path.name)
-        except Exception as exc:
-            self.logger.error("failed moving duplicate scanned file %s: %s", path.name, exc)
 
     def _drain_pending_if_needed(self, pending, summary, stop_event):
         if len(pending) < self.config.queue_size:

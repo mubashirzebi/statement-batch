@@ -32,7 +32,6 @@ class AppConfig:
     aws_secret_access_key: str
     aws_session_token: str
     db_secret_name: str
-    s3_secret_name: str
     db_username: str
     db_password: str
     db_dsn: str
@@ -76,7 +75,6 @@ class AppConfig:
             aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY", "").strip(),
             aws_session_token=os.getenv("AWS_SESSION_TOKEN", "").strip(),
             db_secret_name=os.getenv("DB_SECRET_NAME", "").strip(),
-            s3_secret_name=os.getenv("S3_SECRET_NAME", "").strip(),
             db_username=os.getenv("DB_USERNAME", "").strip(),
             db_password=os.getenv("DB_PASSWORD", "").strip(),
             db_dsn=os.getenv("DB_DSN", "").strip(),
@@ -161,16 +159,12 @@ class AppConfig:
                 raise ValueError("AWS_REGION is required")
 
         if command in (COMMAND_RUN, COMMAND_S3_CHECK):
-            if self.secret_mode == SECRET_MODE_ENV and not self.s3_bucket:
-                raise ValueError("S3_BUCKET is required when BATCH_SECRET_MODE=env")
-            if self.secret_mode == SECRET_MODE_SECRETS_MANAGER and not self.s3_secret_name:
-                raise ValueError("S3_SECRET_NAME is required when BATCH_SECRET_MODE=secrets_manager")
+            if not self.s3_bucket:
+                raise ValueError("S3_BUCKET is required")
 
         if command == COMMAND_SECRETS_CHECK and self.secret_mode == SECRET_MODE_SECRETS_MANAGER:
             if not self.db_secret_name:
                 raise ValueError("DB_SECRET_NAME is required when BATCH_SECRET_MODE=secrets_manager")
-            if not self.s3_secret_name:
-                raise ValueError("S3_SECRET_NAME is required when BATCH_SECRET_MODE=secrets_manager")
 
     def _require_oracle_settings(self) -> None:
         if not self.oracle_client_lib_dir:

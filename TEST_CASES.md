@@ -98,22 +98,6 @@ This file captures the manual validation scenarios already executed on the Windo
   - DB row stored full S3 error in `DESCRIPTION`
   - stable `DOCID` was reused
 
-### 6. Duplicate File Name Handling
-
-- Setup:
-  - two files with the same file name placed under different input subfolders
-- Command:
-  - `python main.py run`
-- Expected:
-  - one file is processed normally
-  - duplicate file moves to `failed/<FY>/DUPLICATE_FILE_NAME/`
-  - only one `DOCID` / one S3 object key is used
-- Result:
-  - passed
-- Observed:
-  - duplicate log message was emitted during scan
-  - only one file used `DOCID = 24`
-
 ### 7. Success Folder Move Failure
 
 - Setup:
@@ -236,7 +220,6 @@ The major functional and recovery paths have been manually validated:
 - S3 check
 - metadata-missing path
 - upload retry/failure path
-- duplicate handling
 - success move failure
 - failed move failure
 - live lock protection
