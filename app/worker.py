@@ -9,6 +9,7 @@ from time import perf_counter
 
 from app.models import BatchSummary
 from app.models import DryRunSummary
+from app.utils.runtime_metrics import current_metrics
 
 
 class BatchWorker:
@@ -39,7 +40,8 @@ class BatchWorker:
 
                 if len(current_batch) >= self.config.batch_size:
                     batch_index += 1
-                    pending.add(self._submit_batch(executor, current_batch, batch_index, run_id, stop_event))
+                    batch_paths = current_batch
+                    pending.add(self._submit_batch(executor, batch_paths, batch_index, run_id, stop_event))
                     current_batch = []
                     first_error = self._drain_pending_if_needed(pending, summary, stop_event)
                     if first_error:
@@ -59,8 +61,9 @@ class BatchWorker:
                 executor.shutdown(wait=False, cancel_futures=True)
                 raise first_error
 
+        metrics = current_metrics()
         self.logger.summary(
-            "run summary: total_seen=%s uploaded=%s metadata_missing=%s db_failed=%s upload_failed=%s moved_success=%s moved_failed=%s failed_file_moves=%s duration_ms=%s",
+            "run summary: total_seen=%s uploaded=%s metadata_missing=%s db_failed=%s upload_failed=%s moved_success=%s moved_failed=%s failed_file_moves=%s duration_ms=%s memory_mb=%s cpu_percent=%s",
             summary.total_seen,
             summary.uploaded,
             summary.metadata_missing,
@@ -70,6 +73,8 @@ class BatchWorker:
             summary.moved_failed,
             summary.failed_file_moves,
             self._elapsed_ms(run_started_at),
+            metrics["memory_mb"],
+            metrics["cpu_percent"],
         )
         return summary
 
@@ -94,21 +99,29 @@ class BatchWorker:
         if batch_size:
             summary.batches += 1
 
+        metrics = current_metrics()
         self.logger.summary(
-            "dry-run summary: files_discovered=%s batches=%s duration_ms=%s",
+            "dry-run summary: files_discovered=%s batches=%s duration_ms=%s memory_mb=%s cpu_percent=%s",
             summary.files_discovered,
             summary.batches,
             self._elapsed_ms(run_started_at),
+            metrics["memory_mb"],
+            metrics["cpu_percent"],
         )
         return summary
 
     def _iter_input_files(self):
-        root = Path(self.config.input_dir)
-        for current_root, dir_names, file_names in os.walk(root):
-            dir_names.sort()
-            for file_name in sorted(file_names):
-                if file_name.lower().endswith(".pdf"):
-                    yield Path(current_root) / file_name
+        # Input is intentionally a flat directory. Stream only top-level files
+        # and fail fast if a nested directory is discovered.
+        input_dir = Path(self.config.input_dir)
+        with os.scandir(input_dir) as entries:
+            for entry in entries:
+                if entry.is_dir(follow_symlinks=False):
+                    raise RuntimeError(
+                        "Input directory must be flat; found subdirectory: %s" % entry.path
+                    )
+                if entry.is_file(follow_symlinks=False) and entry.name.lower().endswith(".pdf"):
+                    yield Path(entry.path)
 
     def _drain_pending_if_needed(self, pending, summary, stop_event):
         if len(pending) < self.config.queue_size:
@@ -118,7 +131,7 @@ class BatchWorker:
     def _submit_batch(self, executor, batch_paths, batch_index, run_id, stop_event):
         return executor.submit(
             self._run_batch_task,
-            list(batch_paths),
+            batch_paths,
             batch_index,
             run_id,
             stop_event,

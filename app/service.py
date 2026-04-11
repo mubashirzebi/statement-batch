@@ -1,7 +1,6 @@
 from pathlib import Path
 from time import perf_counter
 from typing import List
-from typing import Tuple
 
 from app.models import BatchSummary
 from app.models import FINALIZE_STATUS_FAILED_DB
@@ -25,6 +24,7 @@ from app.utils.files import file_extension
 from app.utils.files import file_size_string
 from app.utils.files import move_to_path
 from app.utils.files import normalize_db_file_name
+from app.utils.runtime_metrics import current_metrics
 from app.utils.retry import sleep_with_backoff
 
 
@@ -171,8 +171,9 @@ class BatchService:
                         "FAILED_MOVE finalize_db failed; wrote outbox %s: %s" % (outbox_path.name, exc)
                     )
 
+            metrics = current_metrics()
             self.logger.summary(
-                "batch %s completed: uploaded=%s metadata_missing=%s db_failed=%s upload_failed=%s moved_success=%s moved_failed=%s duration_ms=%s",
+                "batch %s completed: uploaded=%s metadata_missing=%s db_failed=%s upload_failed=%s moved_success=%s moved_failed=%s duration_ms=%s memory_mb=%s cpu_percent=%s",
                 batch_index,
                 summary.uploaded,
                 summary.metadata_missing,
@@ -181,6 +182,8 @@ class BatchService:
                 summary.moved_success,
                 summary.moved_failed,
                 self._elapsed_ms(batch_started_at),
+                metrics["memory_mb"],
+                metrics["cpu_percent"],
             )
             return summary
         except Exception as exc:
@@ -425,28 +428,3 @@ class BatchService:
                     )
                 )
         return move_failure_records
-
-    def _move_duplicate(self, job):
-        destination = build_failed_destination(
-            self.config.failed_dir,
-            job.fy_years,
-            "DUPLICATE_FILE_NAME",
-            job.original_file_name,
-        )
-        move_started_at = perf_counter()
-        try:
-            move_to_path(job.path, destination)
-            self.logger.warning(
-                "moved duplicate file to failed folder: file_name=%s destination_path=%s duration_ms=%s",
-                job.original_file_name,
-                destination,
-                self._elapsed_ms(move_started_at),
-            )
-        except Exception as exc:
-            self.logger.error(
-                "failed moving duplicate file %s destination_path=%s duration_ms=%s: %s",
-                job.original_file_name,
-                destination,
-                self._elapsed_ms(move_started_at),
-                exc,
-            )

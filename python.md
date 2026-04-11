@@ -36,8 +36,8 @@ Because you insisted on: **move after DB update**, but also on truthfulness:
 
 ## Credentials
 
-### Local / UAT / Prod — same pattern
-Oracle credentials are fetched from AWS Secrets Manager, while S3 configuration is provided via environment variables (authenticating via IAM Roles).
+### Local / UAT / Prod
+Oracle credentials are fetched from AWS Secrets Manager or environment variables, while S3 uses boto3's normal credential chain.
 
 Required env vars:
 
@@ -50,12 +50,7 @@ Required env vars:
 { "username": "FINACLE", "password": "...", "dsn": "host:1521/ORCLPDB1" }
 ```
 
-**S3 secret JSON (example)**
-```json
-{ "aws_access_key_id":"...", "aws_secret_access_key":"...", "aws_session_token":"", "region":"ap-south-1", "bucket":"your-bucket" }
-```
-
-> For local development, boto3 will use your normal AWS auth chain (AWS_PROFILE, env keys, SSO, etc.).
+> For local development, boto3 can use `AWS_PROFILE`, env keys, SSO, or any other normal AWS auth chain. In UAT/prod, S3 can use IAM-based credentials with no explicit access key in app config.
 
 ## Configuration
 
@@ -91,8 +86,6 @@ pip install -r requirements.txt
 
 export AWS_REGION=ap-south-1
 export DB_SECRET_NAME=batchjob/dev/oracle
-export S3_SECRET_NAME=batchjob/dev/s3
-
 export BATCH_INPUT_DIR=/data/in
 export BATCH_SUCCESS_DIR=/data/success
 export BATCH_FAILED_DIR=/data/failed
@@ -116,6 +109,5 @@ Run the SQL in `sql/`:
 ---
 
 If you want improvements later:
-- use IAM role for S3 instead of access keys in secrets
 - add metrics (counts + timings)
 - add dry-run mode
