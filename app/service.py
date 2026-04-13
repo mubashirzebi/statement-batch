@@ -40,6 +40,47 @@ class BatchService:
         self.outbox_manager = outbox_manager
         self.logger = logger
 
+    def reconcile_pending_moves(self) -> int:
+        pending_rows = self.repository.get_pending_moves()
+        if not pending_rows:
+            return 0
+
+        move_records = []
+        for row in pending_rows:
+            if not row.filepath:
+                continue
+            original_file_name = Path(row.filepath).name
+            expected_dest = build_success_destination(
+                self.config.success_dir,
+                row.fy_years,
+                original_file_name,
+            )
+            if expected_dest.exists():
+                move_records.append(
+                    MoveRecord(
+                        file_name=row.file_name,
+                        doc_id=row.doc_id,
+                        move_status=MOVE_STATUS_MOVED_SUCCESS,
+                        description="reconciled orphaned pending move after crash",
+                        final_path=str(expected_dest),
+                        file_size=row.file_size,
+                    )
+                )
+
+        if not move_records:
+            return 0
+
+        reconciled_count = 0
+        for i in range(0, len(move_records), self.config.batch_size):
+            chunk = move_records[i : i + self.config.batch_size]
+            try:
+                self.repository.finalize_move(chunk)
+                reconciled_count += len(chunk)
+            except Exception as exc:
+                self.logger.error("failed reconciling pending move chunk: %s", exc)
+
+        return reconciled_count
+
     def process_batch(self, batch_paths: List[Path], batch_index: int, run_id: str) -> BatchSummary:
         summary = BatchSummary(batch_index=batch_index)
         jobs = self._build_jobs(batch_paths)

@@ -80,8 +80,12 @@ else
   exit 1
 fi
 
-echo "Installing/updating dependencies"
-python -m pip install -r "$ROOT_DIR/requirements.txt"
+MARKER="$VENV_DIR/.deps_installed"
+if [[ ! -f "$MARKER" ]] || [[ "$ROOT_DIR/requirements.txt" -nt "$MARKER" ]]; then
+  echo "Installing/updating dependencies"
+  python -m pip install -r "$ROOT_DIR/requirements.txt"
+  touch "$MARKER"
+fi
 
 export BATCH_ENV="$BATCH_ENV_INPUT"
 

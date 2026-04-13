@@ -105,6 +105,38 @@ class BatchRepository:
             duration_ms=self._elapsed_ms(started_at),
         )
 
+    def get_pending_moves(self):
+        started_at = perf_counter()
+        query = """
+            SELECT FILE_NAME, DOCID, FY_YEARS, FILEPATH, FILESIZE
+              FROM FINACLE_STMT_LOG
+             WHERE STATUS = 'DB_COMMITTED_PENDING_MOVE'
+        """
+        with self.pool.acquire() as connection:
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute(query)
+                    rows = cursor.fetchall()
+            except Exception as exc:
+                if self.logger:
+                    self.logger.error("failed querying pending moves: %s", exc)
+                return []
+        
+        from app.models import PendingMoveRow
+        results = [
+            PendingMoveRow(
+                file_name=row[0],
+                doc_id=int(row[1]) if row[1] else 0,
+                fy_years=row[2] or "",
+                filepath=row[3] or "",
+                file_size=row[4] or "",
+            )
+            for row in rows
+        ]
+        if self.logger and results:
+            self.logger.info("found %s pending moves in database duration_ms=%s", len(results), self._elapsed_ms(started_at))
+        return results
+
     def _build_varchar_list(self, connection, values):
         list_type = connection.gettype("SYS.ODCIVARCHAR2LIST")
         collection = list_type.newobject()

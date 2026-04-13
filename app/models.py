@@ -103,5 +103,14 @@ class DryRunSummary:
     batches: int = 0
 
 
+@dataclass
+class PendingMoveRow:
+    file_name: str
+    doc_id: int
+    fy_years: str
+    filepath: str
+    file_size: str
+
+
 def records_from_json(payload: List[Dict[str, object]], record_type):
     return [record_type(**item) for item in payload]

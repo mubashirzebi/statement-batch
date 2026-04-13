@@ -134,6 +134,11 @@ def _run_batch(config, logger, session_id):
 
             uploader = S3Uploader(s3_credentials)
             service = BatchService(config, repository, uploader, outbox_manager, logger)
+
+            reconciled_count = service.reconcile_pending_moves()
+            if reconciled_count:
+                logger.warning("reconciled %s orphaned pending-move records", reconciled_count)
+
             worker = BatchWorker(config, service, logger)
 
             run_id = "%s_%s" % (datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ"), session_id)
