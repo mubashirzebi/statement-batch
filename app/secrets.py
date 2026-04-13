@@ -2,6 +2,7 @@ import json
 from dataclasses import dataclass
 from typing import Any
 from typing import Dict
+from typing import Optional
 
 import boto3
 
@@ -73,7 +74,7 @@ class CredentialResolver:
         if not secret_name:
             raise ValueError("Secret name is required")
 
-        session = self._build_boto3_session()
+        session = self._build_boto3_session(profile_name=self.config.aws_profile)
         client = session.client("secretsmanager")
         response = client.get_secret_value(SecretId=secret_name)
         secret_string = response.get("SecretString")
@@ -81,10 +82,10 @@ class CredentialResolver:
             raise RuntimeError("Secret %s did not return SecretString" % secret_name)
         return json.loads(secret_string)
 
-    def _build_boto3_session(self):
+    def _build_boto3_session(self, profile_name: Optional[str] = None):
         kwargs = {"region_name": self.config.aws_region}
-        if self.config.aws_profile:
-            kwargs["profile_name"] = self.config.aws_profile
+        if profile_name:
+            kwargs["profile_name"] = profile_name
         if self.config.aws_access_key_id and self.config.aws_secret_access_key:
             kwargs["aws_access_key_id"] = self.config.aws_access_key_id
             kwargs["aws_secret_access_key"] = self.config.aws_secret_access_key

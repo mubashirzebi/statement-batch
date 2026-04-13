@@ -1,4 +1,6 @@
+import os
 import uuid
+from contextlib import contextmanager
 
 import boto3
 # from botocore.exceptions import ClientError
@@ -13,13 +15,14 @@ class S3Uploader:
             if credentials.session_token:
                 session_kwargs["aws_session_token"] = credentials.session_token
 
-        session = boto3.session.Session(**session_kwargs)
-        client_kwargs = {}
-        if credentials.endpoint_url:
-            client_kwargs["endpoint_url"] = credentials.endpoint_url
+        with _without_aws_profile_env():
+            session = boto3.session.Session(**session_kwargs)
+            client_kwargs = {}
+            if credentials.endpoint_url:
+                client_kwargs["endpoint_url"] = credentials.endpoint_url
 
         self.bucket = credentials.bucket
-        self.client = session.client("s3", **client_kwargs)
+        self.client = client
 
     def upload_file(self, local_path, object_key):
         self.client.upload_file(str(local_path), self.bucket, object_key)
@@ -50,3 +53,16 @@ class S3Uploader:
             "delete_allowed": delete_allowed,
             "cleanup_warning": cleanup_warning,
         }
+
+
+@contextmanager
+def _without_aws_profile_env():
+    saved = {}
+    for name in ("AWS_PROFILE", "AWS_DEFAULT_PROFILE"):
+        if name in os.environ:
+            saved[name] = os.environ.pop(name)
+    try:
+        yield
+    finally:
+        for name, value in saved.items():
+            os.environ[name] = value

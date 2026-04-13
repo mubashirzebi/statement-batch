@@ -23,7 +23,7 @@ def main(argv=None):
         choices=[COMMAND_RUN, COMMAND_DRY_RUN, COMMAND_DB_CHECK, COMMAND_S3_CHECK, COMMAND_SECRETS_CHECK],
     )
     args = parser.parse_args(argv)
-    started_at = datetime.now()
+    started_at = datetime.now(timezone.utc)
     session_id = uuid.uuid4().hex[:8]
 
     load_environment_files()
@@ -51,6 +51,9 @@ def main(argv=None):
         if args.command == COMMAND_S3_CHECK:
             return _run_s3_check(config, logger)
         return _run_batch(config, logger, session_id)
+    except KeyboardInterrupt:
+        logger.error("command interrupted by user")
+        return 130
     except Exception as exc:
         logger.exception("command failed: %s", exc)
         return 1

@@ -86,7 +86,6 @@ class OutboxManager:
             replayed.append(path.name)
 
         return replayed
-
     def _store(self, operation, run_id, batch_index, records):
         payload = {
             "operation": operation,

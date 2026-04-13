@@ -114,6 +114,8 @@ class JobLock:
 
         try:
             os.kill(pid, 0)
-        except OSError:
-            return False
+        except ProcessLookupError:
+            return False       # PID genuinely dead
+        except PermissionError:
+            return True        # PID alive but owned by another user
         return True
