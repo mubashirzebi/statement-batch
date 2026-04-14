@@ -17,12 +17,15 @@ class S3Uploader:
 
         with _without_aws_profile_env():
             session = boto3.session.Session(**session_kwargs)
+            # Force lazy credentials evaluation while AWS_PROFILE is stripped from environment
+            session.get_credentials()
+
             client_kwargs = {}
             if credentials.endpoint_url:
                 client_kwargs["endpoint_url"] = credentials.endpoint_url
 
-        self.bucket = credentials.bucket
-        self.client = client
+            self.bucket = credentials.bucket
+            self.client = session.client("s3", **client_kwargs)
 
     def upload_file(self, local_path, object_key):
         self.client.upload_file(str(local_path), self.bucket, object_key)

@@ -36,8 +36,10 @@ Because you insisted on: **move after DB update**, but also on truthfulness:
 
 ## Credentials
 
-### Local / UAT / Prod
-Oracle credentials are fetched from AWS Secrets Manager or environment variables, while S3 uses boto3's normal credential chain.
+### Authentication Isolation 
+To meet strict security requirements, database and S3 authentication are fully isolated from each other. 
+- **Database Credentials**: Fetched securely from AWS Secrets Manager using the **AWS Profile** (`AWS_PROFILE`) configured in your environment.
+- **S3 Connectivity**: Connects using the direct **IAM Role** attached to the server. Crucially, the S3 flow **strips the AWS Profile** inside a temporary context manager to guarantee it never accidentally picks up the restricted DB profile.
 
 Required env vars:
 

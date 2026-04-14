@@ -63,8 +63,9 @@ python main.py run
 
 - Oracle is currently implemented in thick mode only.
 - Local/dev can use direct env credentials.
-- DB can use env credentials or AWS Secrets Manager.
-- S3 uses boto3's normal credential chain, including IAM-based auth in UAT/prod.
+- **Credential Isolation**: DB and S3 are strictly isolated to avoid credential overlap:
+  - **DB** fetches credentials from AWS Secrets Manager using the **AWS Profile** provided in the environment/config (`AWS_PROFILE`).
+  - **S3** ignores the AWS Profile entirely and authenticates natively via the server's IAM Role (Instance Metadata Service) or explicit environment variables.
 - Logs go to console and also into one folder per run under `BATCH_LOG_DIR`.
 - Per-run folders use a readable timestamped name like `2026-04-04_14-30-00_run_ab12cd34`.
 - The folder structure is:
