@@ -97,6 +97,11 @@ python main.py
 
 ## Oracle setup
 
+The application supports both **Thin Mode** (default) and **Thick Mode**.
+
+- **Thin Mode**: No local Oracle client required. Just ensure your Oracle server is accessible.
+- **Thick Mode**: Required for specialized features. Set `ORACLE_CLIENT_LIB_DIR` in your `.env` to enable it.
+
 Run the SQL in `sql/`:
 
 - `sql/01_types.sql` — creates object/table types used for array inputs

@@ -5,7 +5,9 @@ Windows-first Python implementation of the stored-procedure-driven batch flow de
 ## Prerequisites
 
 - Python `3.9` or higher must be installed and available as `python3.9` or `python3`.
-- Oracle Instant Client must be installed on the machine.
+- Python `3.9` or higher must be installed and available as `python3.9` or `python3`.
+- Oracle Instant Client is **optional**. The application defaults to **Thin Mode**.
+- Thick Mode is only required if using specialized Oracle client features (requires `ORACLE_CLIENT_LIB_DIR` in env).
 - The correct env file must exist before running the script:
   - `.env.dev`
   - `.env.uat`

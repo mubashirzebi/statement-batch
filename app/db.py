@@ -14,9 +14,16 @@ def _initialize_oracle_client(config, logger=None):
     with _oracle_init_lock:
         if _oracle_initialized:
             return
+            
+        if not config.oracle_client_lib_dir:
+            if logger:
+                logger.info("Oracle client library directory not provided; proceeding in THIN mode")
+            _oracle_initialized = True
+            return
+
         if logger:
             logger.info(
-                "initializing Oracle client in thick mode from %s",
+                "initializing Oracle client in THICK mode from %s",
                 config.oracle_client_lib_dir,
             )
         oracledb.init_oracle_client(lib_dir=str(config.oracle_client_lib_dir))
@@ -25,8 +32,9 @@ def _initialize_oracle_client(config, logger=None):
 
 def create_pool(config, credentials, logger=None):
     _initialize_oracle_client(config, logger)
+    mode = "THICK" if config.oracle_client_lib_dir else "THIN"
     if logger:
-        logger.info("creating Oracle pool in thick mode")
+        logger.info("creating Oracle pool in %s mode", mode)
     return oracledb.create_pool(
         user=credentials.username,
         password=credentials.password,

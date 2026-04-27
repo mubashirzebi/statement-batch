@@ -167,8 +167,9 @@ class AppConfig:
                 raise ValueError("DB_SECRET_NAME is required when BATCH_SECRET_MODE=secrets_manager")
 
     def _require_oracle_settings(self) -> None:
-        if not self.oracle_client_lib_dir:
-            raise ValueError("ORACLE_CLIENT_LIB_DIR is required for Oracle thick mode")
+        if self.oracle_client_lib_dir:
+            self._require_existing_directory(self.oracle_client_lib_dir, "ORACLE_CLIENT_LIB_DIR")
+            
         if self.secret_mode == SECRET_MODE_ENV:
             if not self.db_username:
                 raise ValueError("DB_USERNAME is required when BATCH_SECRET_MODE=env")
